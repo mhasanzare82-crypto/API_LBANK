@@ -64,3 +64,10 @@ Official documentation: https://www.lbank.com/docs/contract.html
 ## Current status
 
 The dynamic public symbol selector, editable local settings, and local order preflight/preview model are committed to the development branch. The app has not been built or tested in a Flutter/Android SDK environment. There is no verified APK. No private account request, live order, close, or cancel action is implemented. Live trading must remain disabled until LBank's current private Contract API schemas are obtained and verified, and Android build/tests pass.
+
+
+## GitHub Actions Android build
+
+`.github/workflows/android-apk.yml` runs dependency resolution, static analysis, Flutter tests, and a debug APK build on pushes to the development branch, pull requests to main, or manual workflow dispatch. The repository currently has no committed `android/` platform scaffold, so the workflow generates the standard Android host project in the CI runner with `flutter create --platforms=android` before building. The generated platform files are not committed back to the repository.
+
+When the workflow succeeds, download the `lbank-futures-debug-apk` artifact from the workflow run's Artifacts section. This is a debug APK for UI and integration testing only; it is not a production-signed release and does not enable live Futures orders. The first workflow run must confirm that the Android scaffold, dependencies, analyzer, and tests all pass.
