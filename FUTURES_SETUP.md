@@ -9,6 +9,16 @@
 - No credentials are embedded in Dart source, assets, or this repository.
 - No withdrawal or transfer code is included.
 
+## Dynamic Futures symbol list
+
+- The Android app requests the public `instrument` and `marketData` endpoints for `productGroup=SwapU`.
+- The selector intersects the instrument list with symbols currently returned by market data, sorts the resulting symbols, and provides a refresh action.
+- `BTCUSDT` is selected by default when it is present. If LBank does not return it, the first currently quoted contract is selected as a safe UI fallback.
+- Instrument metadata displayed/available to later order forms includes min/max order volume, price tick, volume tick, and default leverage.
+- This is public market-data access only; it does not authenticate the account or place orders.
+
+The public instrument response schema does not document a dedicated active/status field. Therefore, the app uses presence in the current market-data response as the active/quoted filter. The result is a live quoted-contract list, not a claim that every returned contract is guaranteed to accept orders at every moment.
+
 ## Verified official futures API details
 
 The official Contract API documentation identifies:
@@ -36,4 +46,4 @@ Official documentation: https://www.lbank.com/docs/contract.html
 
 ## Current limitation
 
-This repository change is a secure credential/signing foundation only. It does not yet connect to private futures endpoints, fetch positions/balances, place/cancel orders, or produce a verified APK. Those steps require the current private futures endpoint schemas and a Flutter build/test run.
+The dynamic public Futures symbol selector is implemented on the development branch, but it has not yet been built or tested in a Flutter/Android SDK environment. The app still does not connect to private futures endpoints, fetch positions/balances, place/cancel orders, or produce a verified APK. Those steps require the current private futures endpoint schemas and a Flutter build/test run.
