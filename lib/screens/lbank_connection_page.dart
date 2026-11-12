@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../services/lbank_trading_settings.dart';
 
@@ -188,7 +188,7 @@ class _LbankConnectionPageState extends State<LbankConnectionPage> {
                       )
                     else
                       DropdownButtonFormField<String>(
-                        value: _selectedSymbol,
+                        initialValue: _selectedSymbol,
                         isExpanded: true,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
@@ -250,7 +250,7 @@ class _LbankConnectionPageState extends State<LbankConnectionPage> {
                         onChanged: (value) => _updateSettings(_settings.copyWith(leverage: value.round())),
                       ),
                       DropdownButtonFormField<String>(
-                        value: _settings.marginMode,
+                        initialValue: _settings.marginMode,
                         decoration: const InputDecoration(labelText: 'نوع مارجین'),
                         items: const [
                           DropdownMenuItem(value: 'isolated', child: Text('Isolated')),
@@ -260,7 +260,7 @@ class _LbankConnectionPageState extends State<LbankConnectionPage> {
                       ),
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
-                        value: _settings.positionMode,
+                        initialValue: _settings.positionMode,
                         decoration: const InputDecoration(labelText: 'حالت پوزیشن'),
                         items: const [
                           DropdownMenuItem(value: 'oneway', child: Text('One-Way')),
@@ -270,7 +270,7 @@ class _LbankConnectionPageState extends State<LbankConnectionPage> {
                       ),
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
-                        value: _settings.orderType,
+                        initialValue: _settings.orderType,
                         decoration: const InputDecoration(labelText: 'نوع سفارش'),
                         items: const [
                           DropdownMenuItem(value: 'market', child: Text('Market')),
