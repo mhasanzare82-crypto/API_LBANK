@@ -3,9 +3,7 @@
 ## Implemented foundation
 
 - API Key and Secret Key are stored locally through Flutter Secure Storage.
-- HmacSHA256 signing follows the official Contract API canonicalization flow:
-  sorted parameters + `signature_method`, `timestamp`, and `echostr`;
-  uppercase MD5 digest; HmacSHA256 over that digest.
+- HmacSHA256 signing helper is present; do not use it for private requests until the exact current Contract API signing schema has been independently verified.
 - No credentials are embedded in Dart source, assets, or this repository.
 - No withdrawal or transfer code is included.
 
@@ -13,44 +11,13 @@
 
 - The Android app requests the public `instrument` and `marketData` endpoints for `productGroup=SwapU`.
 - The selector intersects the instrument list with symbols currently returned by market data, sorts the resulting symbols, and provides a refresh action.
-- `BTCUSDT` is selected by default when it is present. If LBank does not return it, the first currently quoted contract is selected as a safe UI fallback.
-- Instrument metadata displayed/available to later order forms includes min/max order volume, price tick, volume tick, and default leverage.
+- `BTCUSDT` is selected by default when it is present. If LBank does not return it, the first currently quoted contract is selected as a UI fallback.
+- Instrument metadata includes min/max order volume, price tick, volume tick, and default leverage.
 - This is public market-data access only; it does not authenticate the account or place orders.
 
-The public instrument response schema does not document a dedicated active/status field. Therefore, the app uses presence in the current market-data response as the active/quoted filter. The result is a live quoted-contract list, not a claim that every returned contract is guaranteed to accept orders at every moment.
+## Editable Futures settings
 
-## Verified official futures API details
-
-The official Contract API documentation identifies:
-
-- REST base URL: `https://lbkperp.lbank.com/`
-- WebSocket URL: `wss://lbkperpws.lbank.com/ws`
-- Public contract endpoints:
-  - `GET /cfd/openApi/v1/pub/getTime`
-  - `GET /cfd/openApi/v1/pub/instrument?productGroup=...`
-  - `GET /cfd/openApi/v1/pub/marketData?productGroup=...`
-  - `GET /cfd/openApi/v1/pub/marketOrder?depth=...&symbol=...`
-
-The currently published Contract API page exposes public market-data endpoints, but does not expose the private futures account, position, order-placement, or order-cancellation schemas in the page inspected. Do not guess these paths or payloads. Verify the current private endpoint definitions and permissions with LBank before enabling account reads or live trading.
-
-Official documentation: https://www.lbank.com/docs/contract.html
-
-## Required security setup before live use
-
-1. Create a dedicated LBank API key with futures read/trade permissions only.
-2. Disable withdrawal and transfer permissions.
-3. Apply an IP allowlist where possible. LBank documents that unbound API keys expire after 30 days.
-4. Do not paste API credentials into chat, issues, logs, screenshots, or source files.
-5. Before enabling live orders, add explicit order confirmation, quantity/notional limits, leverage caps, and a kill switch.
-6. Test with an LBank-provided test account or sandbox first.
-
-## Current limitation
-
-The dynamic public Futures symbol selector is implemented on the development branch, but it has not yet been built or tested in a Flutter/Android SDK environment. The app still does not connect to private futures endpoints, fetch positions/balances, place/cancel orders, or produce a verified APK. Those steps require the current private futures endpoint schemas and a Flutter build/test run.
-
-## Editable in-app trading preferences
-
-The connection screen now includes a locally persisted Futures settings panel with these initial values:
+The connection screen includes locally persisted preferences with these initial values:
 
 - Default leverage: 50x (UI slider range 1x–125x; actual contract leverage limits must be checked per symbol)
 - Margin mode: Isolated
@@ -60,4 +27,40 @@ The connection screen now includes a locally persisted Futures settings panel wi
 - Stop Loss: enabled
 - Take Profit: enabled
 
-All seven settings can be changed in the app and are saved locally using Flutter Secure Storage. They are currently preferences for the future order workflow only; they are not yet submitted to LBank and do not change exchange account settings. The 125x slider ceiling is a UI upper bound, not a guarantee that a selected contract permits 125x. Validate leverage and supported modes against each contract and the official private API before placing any live order.
+All settings can be changed in the app and are saved locally using Flutter Secure Storage. They are preferences only; they are not yet submitted to LBank or applied to the exchange account.
+
+## Order preflight foundation
+
+`lib/services/lbank_order_preflight.dart` adds a local order-preview model and validates positive quantity, instrument minimum/maximum quantity, and volume-step alignment. It copies the selected settings into a preview. It intentionally has no network submit method and cannot place, close, or cancel an order.
+
+This is not sufficient to approve a live order. Before live trading, the app must additionally validate contract-specific leverage ceilings, price/quantity precision, notional limits, margin sufficiency, position mode, reduce-only/close semantics, TP/SL semantics, duplicate submissions, and exchange response handling.
+
+## Official futures API information
+
+The official Contract API documentation identifies:
+
+- REST base URL: `https://lbkperp.lbank.com/`
+- WebSocket URL: `wss://lbkperpws.lbank.com/ws`
+- Public endpoints:
+  - `GET /cfd/openApi/v1/pub/getTime`
+  - `GET /cfd/openApi/v1/pub/instrument?productGroup=...`
+  - `GET /cfd/openApi/v1/pub/marketData?productGroup=...`
+  - `GET /cfd/openApi/v1/pub/marketOrder?depth=...&symbol=...`
+
+The private futures account, position, leverage/margin-setting, order-placement, close-position, and cancellation schemas have not yet been verified against a current authoritative specification. Do not guess these paths or payloads. Obtain the current private Contract API documentation from LBank support/developer portal before implementing signed requests or enabling live trading.
+
+Official documentation: https://www.lbank.com/docs/contract.html
+
+## Security requirements before live use
+
+1. Use a dedicated API key with futures read/trade only.
+2. Disable withdrawal and transfer permissions.
+3. Prefer an IP allowlist where feasible; confirm LBank's current API-key expiration rules.
+4. Never paste API credentials into chat, issues, logs, screenshots, or source files.
+5. A mobile-only app stores the secret on the device and is less secure than a backend signing service.
+6. Before enabling live orders, require explicit confirmation, risk/notional caps, contract leverage validation, idempotency protection, and a kill switch.
+7. Test on an official sandbox/test account if available.
+
+## Current status
+
+The dynamic public symbol selector, editable local settings, and local order preflight/preview model are committed to the development branch. The app has not been built or tested in a Flutter/Android SDK environment. There is no verified APK. No private account request, live order, close, or cancel action is implemented. Live trading must remain disabled until LBank's current private Contract API schemas are obtained and verified, and Android build/tests pass.
