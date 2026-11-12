@@ -47,3 +47,17 @@ Official documentation: https://www.lbank.com/docs/contract.html
 ## Current limitation
 
 The dynamic public Futures symbol selector is implemented on the development branch, but it has not yet been built or tested in a Flutter/Android SDK environment. The app still does not connect to private futures endpoints, fetch positions/balances, place/cancel orders, or produce a verified APK. Those steps require the current private futures endpoint schemas and a Flutter build/test run.
+
+## Editable in-app trading preferences
+
+The connection screen now includes a locally persisted Futures settings panel with these initial values:
+
+- Default leverage: 50x (UI slider range 1x–125x; actual contract leverage limits must be checked per symbol)
+- Margin mode: Isolated
+- Position mode: One-Way
+- Order type: Market
+- Manual order confirmation: enabled
+- Stop Loss: enabled
+- Take Profit: enabled
+
+All seven settings can be changed in the app and are saved locally using Flutter Secure Storage. They are currently preferences for the future order workflow only; they are not yet submitted to LBank and do not change exchange account settings. The 125x slider ceiling is a UI upper bound, not a guarantee that a selected contract permits 125x. Validate leverage and supported modes against each contract and the official private API before placing any live order.
