@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/lbank_trading_settings.dart';
+
 import '../security/lbank_credentials_store.dart';
 import '../services/lbank_futures_market_service.dart';
 
@@ -13,6 +15,9 @@ class LbankConnectionPage extends StatefulWidget {
 class _LbankConnectionPageState extends State<LbankConnectionPage> {
   final _store = LbankCredentialsStore();
   final _marketService = LbankFuturesMarketService();
+  final _settingsStore = LbankTradingSettingsStore();
+  LbankTradingSettings _settings = const LbankTradingSettings();
+  bool _settingsLoaded = false;
   final _apiKeyController = TextEditingController();
   final _secretController = TextEditingController();
   bool _saving = false;
@@ -28,6 +33,7 @@ class _LbankConnectionPageState extends State<LbankConnectionPage> {
     super.initState();
     _refreshStatus();
     _loadSymbols();
+    _loadTradingSettings();
   }
 
   Future<void> _loadSymbols() async {
@@ -54,6 +60,17 @@ class _LbankConnectionPageState extends State<LbankConnectionPage> {
     } finally {
       if (mounted) setState(() => _loadingSymbols = false);
     }
+  }
+
+  Future<void> _loadTradingSettings() async {
+    final settings = await _settingsStore.load();
+    if (!mounted) return;
+    setState(() { _settings = settings; _settingsLoaded = true; });
+  }
+
+  Future<void> _updateSettings(LbankTradingSettings next) async {
+    setState(() => _settings = next);
+    await _settingsStore.save(next);
   }
 
   Future<void> _refreshStatus() async {
@@ -197,6 +214,95 @@ class _LbankConnectionPageState extends State<LbankConnectionPage> {
                     const SizedBox(height: 8),
                     Text(
                       'فهرست از قراردادهای SwapU و نمادهایی که داده بازار جاری دارند ساخته می‌شود. انتخاب فعلی: ${_selectedSymbol ?? '—'}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('تنظیمات معاملات', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 6),
+                    const Text('مقادیر اولیه قابل تغییر و ذخیره روی همین دستگاه هستند.'),
+                    const SizedBox(height: 12),
+                    if (!_settingsLoaded)
+                      const LinearProgressIndicator()
+                    else ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('اهرم پیش‌فرض'),
+                          Text('${_settings.leverage}x', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      Slider(
+                        value: _settings.leverage.toDouble(),
+                        min: 1,
+                        max: 125,
+                        divisions: 124,
+                        label: '${_settings.leverage}x',
+                        onChanged: (value) => _updateSettings(_settings.copyWith(leverage: value.round())),
+                      ),
+                      DropdownButtonFormField<String>(
+                        value: _settings.marginMode,
+                        decoration: const InputDecoration(labelText: 'نوع مارجین'),
+                        items: const [
+                          DropdownMenuItem(value: 'isolated', child: Text('Isolated')),
+                          DropdownMenuItem(value: 'cross', child: Text('Cross')),
+                        ],
+                        onChanged: (v) { if (v != null) _updateSettings(_settings.copyWith(marginMode: v)); },
+                      ),
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        value: _settings.positionMode,
+                        decoration: const InputDecoration(labelText: 'حالت پوزیشن'),
+                        items: const [
+                          DropdownMenuItem(value: 'oneway', child: Text('One-Way')),
+                          DropdownMenuItem(value: 'hedge', child: Text('Hedge')),
+                        ],
+                        onChanged: (v) { if (v != null) _updateSettings(_settings.copyWith(positionMode: v)); },
+                      ),
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        value: _settings.orderType,
+                        decoration: const InputDecoration(labelText: 'نوع سفارش'),
+                        items: const [
+                          DropdownMenuItem(value: 'market', child: Text('Market')),
+                          DropdownMenuItem(value: 'limit', child: Text('Limit')),
+                          DropdownMenuItem(value: 'trigger', child: Text('Trigger')),
+                          DropdownMenuItem(value: 'post_only', child: Text('Post Only')),
+                        ],
+                        onChanged: (v) { if (v != null) _updateSettings(_settings.copyWith(orderType: v)); },
+                      ),
+                      const Divider(height: 24),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('تأیید دستی سفارش'),
+                        value: _settings.manualConfirmation,
+                        onChanged: (v) => _updateSettings(_settings.copyWith(manualConfirmation: v)),
+                      ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Stop Loss'),
+                        value: _settings.stopLossEnabled,
+                        onChanged: (v) => _updateSettings(_settings.copyWith(stopLossEnabled: v)),
+                      ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Take Profit'),
+                        value: _settings.takeProfitEnabled,
+                        onChanged: (v) => _updateSettings(_settings.copyWith(takeProfitEnabled: v)),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'این‌ها فعلاً تنظیمات ذخیره‌شده پنل هستند و تا زمان تکمیل و آزمون API خصوصی، به تنظیمات حساب یا سفارش واقعی LBank اعمال نمی‌شوند.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
